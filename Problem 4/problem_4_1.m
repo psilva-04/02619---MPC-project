@@ -505,6 +505,13 @@ writetable(FirstOrderTable, filename, ...
 
 %% Markov parameters
 
+% G = {
+%     G11_1 G12_1
+%     G21_1 G22_1
+%     G31_1 G32_1
+%     G41_1 G42_1
+% };
+
 G = {
     G11_1 G12_1
     G21_1 G22_1

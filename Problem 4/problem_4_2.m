@@ -341,7 +341,7 @@ for n = 1:3
         noiseNames{n}, ...
         100*processNoise(n)))
 
-    % Save medium noise responses for TF identification
+    % Save low noise responses for TF identification
 
     if n == 1
     
@@ -581,6 +581,13 @@ writetable(FirstOrderTable, filename, ...
 
 
 %% Markov parameters - stochastic model
+
+% G_stochastic = {
+%     G11_1 G12_1
+%     G21_1 G22_1
+%     G31_1 G32_1
+%     G41_1 G42_1
+% };
 
 G_stochastic = {
     G11_1 G12_1
