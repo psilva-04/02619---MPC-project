@@ -353,9 +353,9 @@ for n = 1:3
 end
 
 %% Transfer function identification
-% 10% step and medium noise only
+% 25% step and low noise only
 
-i = 1;
+i = 2;
 
 t_id = TOU_low';
 u_id = double(t_id >= t_step);
@@ -576,8 +576,8 @@ filename = 'TF_Parameters.xlsx';
 writetable(FirstOrderTable, filename, ...
     'Sheet', 'Stochastic 1st Order');
 
-% writetable(SecondOrderTable, filename, ...
-%     'Sheet', 'Stochastic 2nd Order');
+writetable(SecondOrderTable, filename, ...
+    'Sheet', 'Stochastic 2nd Order');
 
 
 %% Markov parameters - stochastic model

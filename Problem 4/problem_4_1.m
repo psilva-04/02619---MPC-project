@@ -499,8 +499,8 @@ filename = 'TF_Parameters.xlsx';
 writetable(FirstOrderTable, filename, ...
     'Sheet', 'Deterministic 1st Order');
 
-% writetable(SecondOrderTable, filename, ...
-%     'Sheet', 'Deterministic 2nd Order');
+writetable(SecondOrderTable, filename, ...
+    'Sheet', 'Deterministic 2nd Order');
 
 
 %% Markov parameters
