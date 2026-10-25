@@ -610,7 +610,40 @@ writetable(RMSETable, filename, ...
     'Sheet', 'Deterministic RMSE');
 
 
+G = {
+    G11_1 G12_2
+    G21_2 G22_1
+    tf(0) G32_1
+    G41_1 tf(0)
+};
 
+t = 0:4:1200;
+
+figure
+
+for i = 1:4
+    for j = 1:2
+
+        subplot(4,2,(i-1)*2+j)
+
+        y = step(tf(G{i,j}),t);
+
+        plot(t/60,y,'b','LineWidth',1.5)
+        grid on
+
+        xlim([0 20])
+        xticks(0:2:20)
+        ymax = max(0.1,ceil((y(end)+0.01)/0.05)*0.05);
+        ylim([0 ymax])
+
+        title(sprintf('G_{%d%d} - F_%d',i,j,j))
+        xlabel('Time [min]')
+        ylabel(sprintf('h_%d / \\Delta F_%d',i,j))
+
+    end
+end
+
+sgtitle('Selected Identified Transfer Functions - Deterministic Model')
 
 %% Markov parameters - deterministic model
 

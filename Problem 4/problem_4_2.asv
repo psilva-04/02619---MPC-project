@@ -685,10 +685,41 @@ writetable(RMSETable, filename, ...
 
 
 
-%% Markov parameters - stochastic model
+%% Display selected transfer functions
 
-gamma1 = 0.6;
-gamma2 = 0.7;
+G = {
+    G11_1 G12_2
+    G21_2 G22_1
+    tf(0) G32_1
+    G41_1 tf(0)
+};
+
+figure
+
+for i = 1:4
+    for j = 1:2
+
+        subplot(4,2,(i-1)*2+j)
+        axis off
+
+        str = strtrim(evalc('G{i,j}'));
+
+        text(0.05,0.5,str, ...
+            'Units','normalized', ...
+            'FontName','Consolas', ...
+            'FontSize',11, ...
+            'Interpreter','none', ...
+            'VerticalAlignment','middle')
+
+        title(sprintf('G_{%d%d}(s)',i,j))
+
+    end
+end
+
+sgtitle('Selected Identified Transfer Functions')
+
+
+%% Markov parameters - stochastic model
 
 G_stochastic = {
     tf(G11_1) tf(G12_2)
@@ -697,73 +728,53 @@ G_stochastic = {
     tf(G41_1) tf(0)
 };
 
-G_disturbance = {
-    G_stochastic{1,2}/(1-gamma2) tf(0)
-    tf(0) G_stochastic{2,1}/(1-gamma1)
-    G_stochastic{3,2}/(1-gamma2) tf(0)
-    tf(0) G_stochastic{4,1}/(1-gamma1)
-};
-
-G_all = [G_stochastic G_disturbance];
-
 ny = size(G_stochastic,1);
-nz = 2;
-nu = 2;
-nd = 2;
+nu = size(G_stochastic,2);
 
-num_stochastic = cell(ny,nu+nd);
-den_stochastic = cell(ny,nu+nd);
+num_stochastic = cell(ny,nu);
+den_stochastic = cell(ny,nu);
 
 for i = 1:ny
-    for j = 1:nu+nd
+    for j = 1:nu
         [num_stochastic{i,j},den_stochastic{i,j}] = ...
-            tfdata(G_all{i,j},'v');
+            tfdata(G_stochastic{i,j},'v');
     end
 end
 
-tau_stochastic = zeros(ny,nu+nd);
+tau_stochastic = zeros(ny,nu);
 
 Ts_markov = 4;
 N = 300;
 
-[H_all,tH_stochastic] = mimoctf2dimpulse( ...
+[H_stochastic,tH_stochastic] = mimoctf2dimpulse( ...
     num_stochastic,den_stochastic,tau_stochastic,Ts_markov,N);
 
-H_stochastic = H_all(:,1:nu,:);
-Hd_stochastic = H_all(:,nu+1:end,:);
-Hz_stochastic = H_stochastic(1:nz,:,:);
+
+%% Plot Markov parameters
 
 figure
 
 for i = 1:ny
 
-    subplot(ny,2,2*i-1)
-    stem(tH_stochastic/60,squeeze(H_stochastic(i,1,:)),'.')
-    grid on
-    xlim([0 20])
-    xticks(0:2:20)
-    ylabel(['h_' num2str(i)])
+    for j = 1:nu
 
-    if i == 1
-        title('F_1')
-    end
+        subplot(ny,nu,(i-1)*nu+j)
 
-    if i == ny
-        xlabel('Time [min]')
-    end
+        stem(tH_stochastic/60,squeeze(H_stochastic(i,j,:)),'.')
+        grid on
+        xlim([0 20])
+        xticks(0:2:20)
 
-    subplot(ny,2,2*i)
-    stem(tH_stochastic/60,squeeze(H_stochastic(i,2,:)),'.')
-    grid on
-    xlim([0 20])
-    xticks(0:2:20)
+        ylabel(['h_' num2str(i)])
 
-    if i == 1
-        title('F_2')
-    end
+        if i == 1
+            title(['F_' num2str(j)])
+        end
 
-    if i == ny
-        xlabel('Time [min]')
+        if i == ny
+            xlabel('Time [min]')
+        end
+
     end
 
 end
@@ -771,72 +782,26 @@ end
 sgtitle('Low Noise - Discrete-Time Markov Parameters')
 
 
-%% Discrete-time state-space model - four physical states
+%% Verify Markov parameters
 
-a = 1.2272*ones(4,1);
-A = 380.1327*ones(4,1);
-gamma = [0.6; 0.7];
-g = 981;
-rho = 1;
+K_markov_stochastic = sum(H_stochastic,3);
 
-hs = xs./(rho*A);
-T = (A./a).*sqrt(2*hs/g);
+K_TF_stochastic = cellfun(@dcgain,G_stochastic);
 
-Ac_stochastic = [
-    -1/T(1)  0        1/T(3)   0
-     0      -1/T(2)   0        1/T(4)
-     0       0       -1/T(3)   0
-     0       0        0       -1/T(4)
-];
+disp('DC gain calculated from Markov parameters:')
+disp(K_markov_stochastic)
 
-Bc_stochastic = rho*[
-    gamma(1)    0
-    0           gamma(2)
-    0           1-gamma(2)
-    1-gamma(1)  0
-];
+disp('DC gain of identified transfer functions:')
+disp(K_TF_stochastic)
 
-Ec_stochastic = rho*[
-    0 0
-    0 0
-    1 0
-    0 1
-];
+gainError_stochastic = max(abs( ...
+    K_markov_stochastic(:)-K_TF_stochastic(:)));
 
-Cy_stochastic = diag(1./(rho*A));
-Cz_stochastic = Cy_stochastic(1:nz,:);
-
-Dy_stochastic = zeros(ny,nu);
-Dz_stochastic = zeros(nz,nu);
-
-Dyd_stochastic = zeros(ny,nd);
-Dzd_stochastic = zeros(nz,nd);
-
-sysc_stochastic_all = ss( ...
-    Ac_stochastic, ...
-    [Bc_stochastic Ec_stochastic], ...
-    Cy_stochastic,zeros(ny,nu+nd));
-
-sysd_stochastic_all = c2d( ...
-    sysc_stochastic_all,Ts_markov,'zoh');
-
-Ad_stochastic = sysd_stochastic_all.A;
-Bd_stochastic = sysd_stochastic_all.B(:,1:nu);
-Ed_stochastic = sysd_stochastic_all.B(:,nu+1:end);
-
-Cd_stochastic = Cz_stochastic;
-Dd_stochastic = Dz_stochastic;
-
-sysd_stochastic_y = ss( ...
-    Ad_stochastic,Bd_stochastic, ...
-    Cy_stochastic,Dy_stochastic,Ts_markov);
-
-sysd_stochastic = ss( ...
-    Ad_stochastic,Bd_stochastic, ...
-    Cz_stochastic,Dz_stochastic,Ts_markov);
+fprintf('\nMaximum stochastic DC gain difference = %.3e\n', ...
+    gainError_stochastic)
 
 
-%% Hankel singular values
+%% Hankel singular values - stochastic model
 
 Nmax = 300;
 tol = 1e-8;
@@ -863,60 +828,91 @@ title('Low Noise - Hankel Singular Values')
 yline(tol,'--','Tolerance')
 
 
-%% Verify Markov parameters against the four-state model
+%% Save Markov parameters
 
-Hss_all = zeros(ny,nu+nd,N+1);
-
-Hss_all(:,:,1) = sysd_stochastic_all.D;
-
-for k = 1:N
-    Hss_all(:,:,k+1) = ...
-        Cy_stochastic*(Ad_stochastic^(k-1))* ...
-        [Bd_stochastic Ed_stochastic];
-end
-
-Hss_stochastic = Hss_all(:,1:nu,:);
-
-maxError_stochastic = ...
-    max(abs(H_all(:)-Hss_all(:)));
-
-fprintf('\nMaximum stochastic TF vs physical-model Markov difference = %.3e\n\n', ...
-    maxError_stochastic)
-
-K_markov = sum(H_stochastic,3);
+save('Markov_stochastic.mat', ...
+    'H_stochastic','tH_stochastic','sH_stochastic', ...
+    'K_markov_stochastic','K_TF_stochastic', ...
+    'gainError_stochastic', ...
+    'Ts_markov','N','Nmax','tol','G_stochastic');
 
 
-%% Save state-space model
+%% Physical four-state space model - stochastic
+
+a_tank = 1.2272*ones(4,1);
+A_tank = 380.1327*ones(4,1);
+
+gamma = [0.6; 0.7];
+g = 981;
+rho = 1;
+
+hs = xs./(rho*A_tank);
+
+T = (A_tank./a_tank).*sqrt(2*hs/g);
+
+Ac_stochastic = [
+    -1/T(1)   0         1/T(3)    0
+     0       -1/T(2)    0         1/T(4)
+     0        0        -1/T(3)    0
+     0        0         0        -1/T(4)
+];
+
+Bc_stochastic = rho*[
+    gamma(1)    0
+    0           gamma(2)
+    0           1-gamma(2)
+    1-gamma(1)  0
+];
+
+Ec_stochastic = rho*[
+    0 0
+    0 0
+    1 0
+    0 1
+];
+
+Cy_stochastic = diag(1./(rho*A_tank));
+Cz_stochastic = Cy_stochastic(1:2,:);
+
+Dy_stochastic = zeros(4,2);
+Dz_stochastic = zeros(2,2);
+
+
+%% Discretization - ZOH
+
+sysc_stochastic_all = ss( ...
+    Ac_stochastic, ...
+    [Bc_stochastic Ec_stochastic], ...
+    Cy_stochastic,zeros(4,4));
+
+sysd_stochastic_all = c2d( ...
+    sysc_stochastic_all,Ts_markov,'zoh');
+
+Ad_stochastic = sysd_stochastic_all.A;
+Bd_stochastic = sysd_stochastic_all.B(:,1:2);
+Ed_stochastic = sysd_stochastic_all.B(:,3:4);
+
+sysd_stochastic_y = ss( ...
+    Ad_stochastic,Bd_stochastic, ...
+    Cy_stochastic,Dy_stochastic,Ts_markov);
+
+sysd_stochastic = ss( ...
+    Ad_stochastic,Bd_stochastic, ...
+    Cz_stochastic,Dz_stochastic,Ts_markov);
+
+Cd_stochastic = Cz_stochastic;
+Dd_stochastic = Dz_stochastic;
+
+
+%% Save physical state-space model
 
 save('sysd_stochastic.mat', ...
     'sysd_stochastic', ...
     'sysd_stochastic_y', ...
     'sysd_stochastic_all', ...
-    'Ad_stochastic', ...
-    'Bd_stochastic', ...
-    'Ed_stochastic', ...
-    'Cy_stochastic', ...
-    'Cz_stochastic', ...
-    'Dy_stochastic', ...
-    'Dz_stochastic', ...
-    'Dyd_stochastic', ...
-    'Dzd_stochastic', ...
-    'Cd_stochastic', ...
-    'Dd_stochastic', ...
+    'Ac_stochastic','Bc_stochastic','Ec_stochastic', ...
+    'Ad_stochastic','Bd_stochastic','Ed_stochastic', ...
+    'Cy_stochastic','Cz_stochastic', ...
+    'Dy_stochastic','Dz_stochastic', ...
+    'Cd_stochastic','Dd_stochastic', ...
     'Ts_markov');
-
-
-%% Save Markov and Hankel results
-
-save('Markov_Hankel_stochastic.mat', ...
-    'H_stochastic', ...
-    'Hd_stochastic', ...
-    'Hz_stochastic', ...
-    'H_all', ...
-    'Hss_stochastic', ...
-    'Hss_all', ...
-    'tH_stochastic', ...
-    'sH_stochastic', ...
-    'K_markov', ...
-    'maxError_stochastic', ...
-    'Ts_markov','N','Nmax','tol');
