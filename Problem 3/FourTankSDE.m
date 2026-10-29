@@ -1,0 +1,70 @@
+function [f,sigma] = FourTankSDE( ...
+    t,xa,u,Fbar,aF,sigmaF,p,model)
+% The augmented state is
+%
+% xa = [m1; m2; m3; m4; F3; F4]
+%
+% and the stochastic differential equation is
+%
+% dxa = f dt + sigma dW
+% where dW is a 2-dimensional Wiener increment associated with
+% the unmeasured disturbances F3 and F4.
+
+%% Augmented state
+
+m = xa(1:4);
+F = xa(5:6);
+
+
+%% Tank dynamics
+
+% dm/dt = f_tank(m,u,F,p)
+
+dm = FourTankSystem(t,m,u,F,p);
+
+
+%% Disturbance dynamics
+
+switch lower(model)
+
+    case 'brownian'
+
+        % dF = sigmaF dW
+
+        driftF = zeros(2,1);
+
+
+    case 'ou'
+
+        % we are using this model from now on
+
+        % dF = aF*(Fbar-F) dt + sigmaF dW
+
+        driftF = aF*(Fbar - F);
+
+
+    otherwise
+
+        error('Unknown disturbance model.')
+
+end
+
+
+%% Complete drift vector
+
+f = [
+    dm
+    driftF
+];
+
+
+%% Diffusion matrix
+
+% Brownian noise acts directly only on F3 and F4.
+
+sigma = [
+    zeros(4,2)
+    sigmaF*eye(2)
+];
+
+end
