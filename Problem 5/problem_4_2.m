@@ -341,7 +341,7 @@ for n = 1:3
         noiseNames{n}, ...
         100*processNoise(n)))
 
-    % Save medium noise responses for TF identification
+    % Save low noise responses for TF identification
 
     if n == 1
     
@@ -353,9 +353,9 @@ for n = 1:3
 end
 
 %% Transfer function identification
-% 10% step and medium noise only
+% 25% step and low noise only
 
-i = 1;
+i = 2;
 
 t_id = TOU_low';
 u_id = double(t_id >= t_step);
@@ -405,89 +405,201 @@ G22_2 = tfest(data22,2,0);
 G32_2 = tfest(data32,2,0);
 G42_2 = tfest(data42,2,0);
 
-% First vs second order comparison - h1 and h2
+% % First vs second order comparison - h1 and h2
+% 
+% figure
+% 
+% subplot(2,2,1)
+% compare(data11,G11_1,G11_2)
+% title('G_{11}: F_1 \rightarrow h_1')
+% 
+% subplot(2,2,2)
+% compare(data12,G12_1,G12_2)
+% title('G_{12}: F_2 \rightarrow h_1')
+% 
+% subplot(2,2,3)
+% compare(data21,G21_1,G21_2)
+% title('G_{21}: F_1 \rightarrow h_2')
+% 
+% subplot(2,2,4)
+% compare(data22,G22_1,G22_2)
+% title('G_{22}: F_2 \rightarrow h_2')
+% 
+% sgtitle('Low Noise - First vs Second Order - h_1 and h_2 - 25% Step')
+% 
+% drawnow
+% 
+% axs = findall(gcf,'Type','axes');
+% 
+% for k = 1:length(axs)
+%     axs(k).XLim = [0 1200];
+%     axs(k).XTick = 0:120:1200;
+%     axs(k).XTickLabel = string(0:2:20);
+% end
+% 
+% txt = findall(gcf,'Type','text');
+% 
+% for k = 1:length(txt)
+%     if contains(string(txt(k).String),'Time (seconds)')
+%         txt(k).String = 'Time [min]';
+%     end
+% end
+% 
+% 
+% % First vs second order comparison - h3 and h4
+% 
+% figure
+% 
+% subplot(2,2,1)
+% compare(data31,G31_1,G31_2)
+% title('G_{31}: F_1 \rightarrow h_3')
+% 
+% subplot(2,2,2)
+% compare(data32,G32_1,G32_2)
+% title('G_{32}: F_2 \rightarrow h_3')
+% 
+% subplot(2,2,3)
+% compare(data41,G41_1,G41_2)
+% title('G_{41}: F_1 \rightarrow h_4')
+% 
+% subplot(2,2,4)
+% compare(data42,G42_1,G42_2)
+% title('G_{42}: F_2 \rightarrow h_4')
+% 
+% sgtitle('Low Noise - First vs Second Order - h_3 and h_4 - 25% Step')
+% 
+% drawnow
+% 
+% axs = findall(gcf,'Type','axes');
+% 
+% for k = 1:length(axs)
+%     axs(k).XLim = [0 1200];
+%     axs(k).XTick = 0:120:1200;
+%     axs(k).XTickLabel = string(0:2:20);
+% end
+% 
+% txt = findall(gcf,'Type','text');
+% 
+% for k = 1:length(txt)
+%     if contains(string(txt(k).String),'Time (seconds)')
+%         txt(k).String = 'Time [min]';
+%     end
+% end
 
-figure
+dataModels = {
+    data11 G11_1 G11_2 'G_{11}: F_1 \rightarrow h_1'
+    data12 G12_1 G12_2 'G_{12}: F_2 \rightarrow h_1'
+    data21 G21_1 G21_2 'G_{21}: F_1 \rightarrow h_2'
+    data22 G22_1 G22_2 'G_{22}: F_2 \rightarrow h_2'
+    data31 G31_1 G31_2 'G_{31}: F_1 \rightarrow h_3'
+    data32 G32_1 G32_2 'G_{32}: F_2 \rightarrow h_3'
+    data41 G41_1 G41_2 'G_{41}: F_1 \rightarrow h_4'
+    data42 G42_1 G42_2 'G_{42}: F_2 \rightarrow h_4'
+};
 
-subplot(2,2,1)
-compare(data11,G11_1,G11_2)
-title('G_{11}: F_1 \rightarrow h_1')
+names = {
+    'G11'
+    'G12'
+    'G21'
+    'G22'
+    'G31'
+    'G32'
+    'G41'
+    'G42'
+};
 
-subplot(2,2,2)
-compare(data12,G12_1,G12_2)
-title('G_{12}: F_2 \rightarrow h_1')
+G_delay = cell(8,1);
 
-subplot(2,2,3)
-compare(data21,G21_1,G21_2)
-title('G_{21}: F_1 \rightarrow h_2')
+K_delay = zeros(8,1);
+tau_delay = zeros(8,1);
+theta_delay = zeros(8,1);
 
-subplot(2,2,4)
-compare(data22,G22_1,G22_2)
-title('G_{22}: F_2 \rightarrow h_2')
+RMSE_1 = zeros(8,1);
+RMSE_2 = zeros(8,1);
+RMSE_delay = zeros(8,1);
 
-sgtitle('Low Noise - First vs Second Order - h_1 and h_2 - 10% Step')
+opt = compareOptions('InitialCondition','z');
 
-drawnow
+for k = 1:8
 
-axs = findall(gcf,'Type','axes');
-
-for k = 1:length(axs)
-    axs(k).XLim = [0 1200];
-    axs(k).XTick = 0:120:1200;
-    axs(k).XTickLabel = string(0:2:20);
-end
-
-txt = findall(gcf,'Type','text');
-
-for k = 1:length(txt)
-    if contains(string(txt(k).String),'Time (seconds)')
-        txt(k).String = 'Time [min]';
+    if k == 1 || k == 5
+        figure
     end
-end
 
+    data = dataModels{k,1};
 
-% First vs second order comparison - h3 and h4
+    % First-order transfer function with delay
 
-figure
+    G_delay{k} = tfest(data,1,0,NaN);
 
-subplot(2,2,1)
-compare(data31,G31_1,G31_2)
-title('G_{31}: F_1 \rightarrow h_3')
+    K_delay(k) = dcgain(G_delay{k});
 
-subplot(2,2,2)
-compare(data32,G32_1,G32_2)
-title('G_{32}: F_2 \rightarrow h_3')
+    poles_delay = pole(G_delay{k});
+    tau_delay(k) = -1/real(poles_delay(1));
 
-subplot(2,2,3)
-compare(data41,G41_1,G41_2)
-title('G_{41}: F_1 \rightarrow h_4')
+    theta_delay(k) = G_delay{k}.IODelay;
 
-subplot(2,2,4)
-compare(data42,G42_1,G42_2)
-title('G_{42}: F_2 \rightarrow h_4')
+    % Model comparison
 
-sgtitle('Low Noise - First vs Second Order - h_3 and h_4 - 10% Step')
+    [ym1,~] = compare(data,dataModels{k,2},opt);
+    [ym2,~] = compare(data,dataModels{k,3},opt);
+    [ymD,~] = compare(data,G_delay{k},opt);
 
-drawnow
+    y = data.OutputData;
+    yhat1 = ym1.OutputData;
+    yhat2 = ym2.OutputData;
+    yhatD = ymD.OutputData;
 
-axs = findall(gcf,'Type','axes');
+    idx = t_id >= t_step;
 
-for k = 1:length(axs)
-    axs(k).XLim = [0 1200];
-    axs(k).XTick = 0:120:1200;
-    axs(k).XTickLabel = string(0:2:20);
-end
+    RMSE_1(k) = sqrt(mean((y(idx)-yhat1(idx)).^2));
+    RMSE_2(k) = sqrt(mean((y(idx)-yhat2(idx)).^2));
+    RMSE_delay(k) = sqrt(mean((y(idx)-yhatD(idx)).^2));
 
-txt = findall(gcf,'Type','text');
+    % Plots
 
-for k = 1:length(txt)
-    if contains(string(txt(k).String),'Time (seconds)')
-        txt(k).String = 'Time [min]';
+    subplot(2,2,mod(k-1,4)+1)
+
+    plot(t_id/60,y,'Color',[0.6 0.6 0.6])
+    hold on
+    plot(t_id/60,yhat1,'LineWidth',1.3)
+    plot(t_id/60,yhat2,'LineWidth',1.3)
+    plot(t_id/60,yhatD,'LineWidth',1.3)
+
+    grid on
+    xlim([0 20])
+    xticks(0:2:20)
+
+    title(dataModels{k,4})
+    xlabel('Time [min]')
+    ylabel('Normalized response')
+
+    legend( ...
+        'Simulation data', ...
+        sprintf('1st order: RMSE = %.4f',RMSE_1(k)), ...
+        sprintf('2nd order: RMSE = %.4f',RMSE_2(k)), ...
+        sprintf('1st + delay: RMSE = %.4f',RMSE_delay(k)), ...
+        'Location','best', ...
+        'FontSize',7)
+
+    if k == 4
+        sgtitle('Stochastic TF Comparison - h_1 and h_2')
+    elseif k == 8
+        sgtitle('Stochastic TF Comparison - h_3 and h_4')
     end
+
 end
 
 
-% Transfer function parameters
+% RMSE table
+
+RMSETable = table( ...
+    names,RMSE_1,RMSE_2,RMSE_delay, ...
+    'VariableNames', ...
+    {'TransferFunction','RMSE_1st','RMSE_2nd','RMSE_1st_Delay'});
+
+
+% Model parameters
 
 models1 = {
     G11_1
@@ -509,17 +621,6 @@ models2 = {
     G32_2
     G41_2
     G42_2
-};
-
-names = {
-    'G11'
-    'G12'
-    'G21'
-    'G22'
-    'G31'
-    'G32'
-    'G41'
-    'G42'
 };
 
 K1 = zeros(8,1);
@@ -550,24 +651,21 @@ FirstOrderTable = table( ...
     names, ...
     K1, ...
     tau1, ...
-    'VariableNames', ...
-    {'TransferFunction','Gain','Tau_s'});
+    'VariableNames',{'TransferFunction','Gain','Tau_s'});
 
 SecondOrderTable = table( ...
     names, ...
     K2, ...
     tau2_1, ...
     tau2_2, ...
-    'VariableNames', ...
-    {'TransferFunction','Gain','Tau1_s','Tau2_s'});
+    'VariableNames',{'TransferFunction','Gain','Tau1_s','Tau2_s'});
 
-
-fprintf('\nFIRST-ORDER MODEL PARAMETERS\n')
-disp(FirstOrderTable)
-
-fprintf('\nSECOND-ORDER MODEL PARAMETERS\n')
-disp(SecondOrderTable)
-
+DelayTable = table( ...
+    names, ...
+    K_delay, ...
+    tau_delay, ...
+    theta_delay, ...
+    'VariableNames',{'TransferFunction','Gain','Tau_s','Delay_s'});
 
 % Save tables
 
@@ -576,28 +674,78 @@ filename = 'TF_Parameters.xlsx';
 writetable(FirstOrderTable, filename, ...
     'Sheet', 'Stochastic 1st Order');
 
-% writetable(SecondOrderTable, filename, ...
-%     'Sheet', 'Stochastic 2nd Order');
+writetable(SecondOrderTable, filename, ...
+    'Sheet', 'Stochastic 2nd Order');
+
+writetable(DelayTable, filename, ...
+    'Sheet', 'Stochastic Delay');
+
+writetable(RMSETable, filename, ...
+    'Sheet', 'Stochastic RMSE');
+
+
+
+%% Display selected transfer functions
+
+G = {
+    G11_1 G12_2
+    G21_2 G22_1
+    tf(0) G32_1
+    G41_1 tf(0)
+};
+
+t = 0:4:1200;
+
+figure
+
+for i = 1:4
+    for j = 1:2
+
+        subplot(4,2,(i-1)*2+j)
+
+        y = step(tf(G{i,j}),t);
+
+        plot(t/60,y,'b','LineWidth',1.5)
+        grid on
+
+        xlim([0 20])
+        xticks(0:2:20)
+        ymax = max(0.1,ceil((y(end)+0.01)/0.05)*0.05);
+        ylim([0 ymax])
+
+        title(sprintf('G_{%d%d} - F_%d',i,j,j))
+        xlabel('Time [min]')
+        ylabel(sprintf('h_%d / \\Delta F_%d',i,j))
+
+    end
+end
+
+sgtitle('Selected Identified Transfer Functions - Stochastic Model')
 
 
 %% Markov parameters - stochastic model
 
 G_stochastic = {
-    G11_1 G12_1
-    G21_1 G22_1
+    tf(G11_1) tf(G12_2)
+    tf(G21_2) tf(G22_1)
+    tf(0)     tf(G32_1)
+    tf(G41_1) tf(0)
 };
 
-num_stochastic = cell(height(G_stochastic),2);
-den_stochastic = cell(height(G_stochastic),2);
+ny = size(G_stochastic,1);
+nu = size(G_stochastic,2);
 
-for i = 1:height(G_stochastic)
-    for j = 1:2
+num_stochastic = cell(ny,nu);
+den_stochastic = cell(ny,nu);
+
+for i = 1:ny
+    for j = 1:nu
         [num_stochastic{i,j},den_stochastic{i,j}] = ...
             tfdata(G_stochastic{i,j},'v');
     end
 end
 
-tau_stochastic = zeros(height(G_stochastic),2);
+tau_stochastic = zeros(ny,nu);
 
 Ts_markov = 4;
 N = 300;
@@ -606,38 +754,31 @@ N = 300;
     num_stochastic,den_stochastic,tau_stochastic,Ts_markov,N);
 
 
+%% Plot Markov parameters
+
 figure
 
-for i = 1:height(G_stochastic)
+for i = 1:ny
 
-    subplot(height(G_stochastic),2,2*i-1)
-    stem(tH_stochastic/60,squeeze(H_stochastic(i,1,:)),'.')
-    grid on
-    xlim([0 20])
-    xticks(0:2:20)
-    ylabel(['h_' num2str(i)])
+    for j = 1:nu
 
-    if i == 1
-        title('F_1')
-    end
+        subplot(ny,nu,(i-1)*nu+j)
 
-    if i == height(G_stochastic)
-        xlabel('Time [min]')
-    end
+        stem(tH_stochastic/60,squeeze(H_stochastic(i,j,:)),'.')
+        grid on
+        xlim([0 20])
+        xticks(0:2:20)
 
+        ylabel(['h_' num2str(i)])
 
-    subplot(height(G_stochastic),2,2*i)
-    stem(tH_stochastic/60,squeeze(H_stochastic(i,2,:)),'.')
-    grid on
-    xlim([0 20])
-    xticks(0:2:20)
+        if i == 1
+            title(['F_' num2str(j)])
+        end
 
-    if i == 1
-        title('F_2')
-    end
+        if i == ny
+            xlabel('Time [min]')
+        end
 
-    if i == height(G_stochastic)
-        xlabel('Time [min]')
     end
 
 end
@@ -645,24 +786,33 @@ end
 sgtitle('Low Noise - Discrete-Time Markov Parameters')
 
 
-%% Discrete-time state-space realization - stochastic model
+%% Verify Markov parameters
+
+K_markov_stochastic = sum(H_stochastic,3);
+
+K_TF_stochastic = cellfun(@dcgain,G_stochastic);
+
+disp('DC gain calculated from Markov parameters:')
+disp(K_markov_stochastic)
+
+disp('DC gain of identified transfer functions:')
+disp(K_TF_stochastic)
+
+gainError_stochastic = max(abs( ...
+    K_markov_stochastic(:)-K_TF_stochastic(:)));
+
+fprintf('\nMaximum stochastic DC gain difference = %.3e\n', ...
+    gainError_stochastic)
+
+
+%% Hankel singular values - stochastic model
 
 Nmax = 300;
 tol = 1e-8;
 
-[Ad_stochastic,Bd_stochastic,Cd_stochastic,Dd_stochastic,sH_stochastic] = ...
-    mimoctf2dss( ...
+[~,~,~,~,sH_stochastic] = mimoctf2dss( ...
     num_stochastic,den_stochastic,tau_stochastic, ...
     Ts_markov,Nmax,tol);
-
-sysd_stochastic = ss(Ad_stochastic,Bd_stochastic,Cd_stochastic,Dd_stochastic,Ts_markov);
-save('sysd_stochastic.mat', ...
-    'sysd_stochastic', ...
-    'Ad_stochastic','Bd_stochastic', ...
-    'Cd_stochastic','Dd_stochastic', ...
-    'Ts_markov');
-
-% Plot Singular Values
 
 figure
 
@@ -670,7 +820,10 @@ Nsv = min(20,length(sH_stochastic));
 
 semilogy(1:Nsv,sH_stochastic(1:Nsv),'o-')
 grid on
-xlim([1 Nsv])
+
+if Nsv > 1
+    xlim([1 Nsv])
+end
 
 xlabel('Singular value index')
 ylabel('Hankel singular value')
@@ -679,34 +832,91 @@ title('Low Noise - Hankel Singular Values')
 yline(tol,'--','Tolerance')
 
 
-%% Verify Markov parameters from state-space model
+%% Save Markov parameters
 
-Hss_stochastic = zeros(height(G_stochastic),2,N+1);
-
-Hss_stochastic(:,:,1) = Dd_stochastic;
-
-for k = 1:N
-    Hss_stochastic(:,:,k+1) = ...
-        Cd_stochastic*(Ad_stochastic^(k-1))*Bd_stochastic;
-end
-
-maxError_stochastic = ...
-    max(abs(H_stochastic(:)-Hss_stochastic(:)));
-
-fprintf('\nMaximum stochastic Markov parameter realization error = %.3e\n\n', ...
-    maxError_stochastic)
-
-K_markov = sum(H_stochastic,3);
-
-disp('DC gain calculated from Markov parameters:')
-disp(K_markov)
-
-disp('DC gain of identified transfer functions:')
-disp([
-    dcgain(G11_1) dcgain(G12_1)
-    dcgain(G21_1) dcgain(G22_1)
-])
-
-save('Markov_Hankel_stochastic.mat', ...
+save('Markov_stochastic.mat', ...
     'H_stochastic','tH_stochastic','sH_stochastic', ...
-    'Ts_markov','N','Nmax','tol')
+    'K_markov_stochastic','K_TF_stochastic', ...
+    'gainError_stochastic', ...
+    'Ts_markov','N','Nmax','tol','G_stochastic');
+
+
+%% Physical four-state space model - stochastic
+
+a_tank = 1.2272*ones(4,1);
+A_tank = 380.1327*ones(4,1);
+
+gamma = [0.6; 0.7];
+g = 981;
+rho = 1;
+
+hs = xs./(rho*A_tank);
+
+T = (A_tank./a_tank).*sqrt(2*hs/g);
+
+Ac_stochastic = [
+    -1/T(1)   0         1/T(3)    0
+     0       -1/T(2)    0         1/T(4)
+     0        0        -1/T(3)    0
+     0        0         0        -1/T(4)
+];
+
+Bc_stochastic = rho*[
+    gamma(1)    0
+    0           gamma(2)
+    0           1-gamma(2)
+    1-gamma(1)  0
+];
+
+Ec_stochastic = rho*[
+    0 0
+    0 0
+    1 0
+    0 1
+];
+
+Cy_stochastic = diag(1./(rho*A_tank));
+Cz_stochastic = Cy_stochastic(1:2,:);
+
+Dy_stochastic = zeros(4,2);
+Dz_stochastic = zeros(2,2);
+
+
+%% Discretization - ZOH
+
+sysc_stochastic_all = ss( ...
+    Ac_stochastic, ...
+    [Bc_stochastic Ec_stochastic], ...
+    Cy_stochastic,zeros(4,4));
+
+sysd_stochastic_all = c2d( ...
+    sysc_stochastic_all,Ts_markov,'zoh');
+
+Ad_stochastic = sysd_stochastic_all.A;
+Bd_stochastic = sysd_stochastic_all.B(:,1:2);
+Ed_stochastic = sysd_stochastic_all.B(:,3:4);
+
+sysd_stochastic_y = ss( ...
+    Ad_stochastic,Bd_stochastic, ...
+    Cy_stochastic,Dy_stochastic,Ts_markov);
+
+sysd_stochastic = ss( ...
+    Ad_stochastic,Bd_stochastic, ...
+    Cz_stochastic,Dz_stochastic,Ts_markov);
+
+Cd_stochastic = Cz_stochastic;
+Dd_stochastic = Dz_stochastic;
+
+
+%% Save physical state-space model
+
+save('sysd_stochastic.mat', ...
+    'sysd_stochastic', ...
+    'sysd_stochastic_y', ...
+    'sysd_stochastic_all', ...
+    'Ac_stochastic','Bc_stochastic','Ec_stochastic', ...
+    'Ad_stochastic','Bd_stochastic','Ed_stochastic', ...
+    'Cy_stochastic','Cz_stochastic', ...
+    'Dy_stochastic','Dz_stochastic', ...
+    'Cd_stochastic','Dd_stochastic', ...
+    'Ts_markov');

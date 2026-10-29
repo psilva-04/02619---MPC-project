@@ -331,89 +331,201 @@ G22_2 = tfest(data22,2,0);
 G32_2 = tfest(data32,2,0);
 G42_2 = tfest(data42,2,0);
 
-% Compare h1 and h2
+% % Compare h1 and h2
+% 
+% figure
+% 
+% subplot(2,2,1)
+% compare(data11,G11_1,G11_2)
+% title('G_{11}: F_1 \rightarrow h_1')
+% 
+% subplot(2,2,2)
+% compare(data12,G12_1,G12_2)
+% title('G_{12}: F_2 \rightarrow h_1')
+% 
+% subplot(2,2,3)
+% compare(data21,G21_1,G21_2)
+% title('G_{21}: F_1 \rightarrow h_2')
+% 
+% subplot(2,2,4)
+% compare(data22,G22_1,G22_2)
+% title('G_{22}: F_2 \rightarrow h_2')
+% 
+% sgtitle('First vs Second Order Models - h_1 and h_2 - 10% Step')
+% 
+% drawnow
+% 
+% axs = findall(gcf,'Type','axes');
+% 
+% for k = 1:length(axs)
+%     axs(k).XLim = [0 1200];
+%     axs(k).XTick = 0:120:1200;
+%     axs(k).XTickLabel = string(0:2:20);
+% end
+% 
+% txt = findall(gcf,'Type','text');
+% 
+% for k = 1:length(txt)
+%     if contains(string(txt(k).String),'Time (seconds)')
+%         txt(k).String = 'Time [min]';
+%     end
+% end
+% 
+% 
+% % Compare h3 and h4
+% 
+% figure
+% 
+% subplot(2,2,1)
+% compare(data31,G31_1,G31_2)
+% title('G_{31}: F_1 \rightarrow h_3')
+% 
+% subplot(2,2,2)
+% compare(data32,G32_1,G32_2)
+% title('G_{32}: F_2 \rightarrow h_3')
+% 
+% subplot(2,2,3)
+% compare(data41,G41_1,G41_2)
+% title('G_{41}: F_1 \rightarrow h_4')
+% 
+% subplot(2,2,4)
+% compare(data42,G42_1,G42_2)
+% title('G_{42}: F_2 \rightarrow h_4')
+% 
+% sgtitle('First vs Second Order Models - h_3 and h_4 - 10% Step')
+% 
+% drawnow
+% 
+% axs = findall(gcf,'Type','axes');
+% 
+% for k = 1:length(axs)
+%     axs(k).XLim = [0 1200];
+%     axs(k).XTick = 0:120:1200;
+%     axs(k).XTickLabel = string(0:2:20);
+% end
+% 
+% txt = findall(gcf,'Type','text');
+% 
+% for k = 1:length(txt)
+%     if contains(string(txt(k).String),'Time (seconds)')
+%         txt(k).String = 'Time [min]';
+%     end
+% end
 
-figure
+dataModels = {
+    data11 G11_1 G11_2 'G_{11}: F_1 \rightarrow h_1'
+    data12 G12_1 G12_2 'G_{12}: F_2 \rightarrow h_1'
+    data21 G21_1 G21_2 'G_{21}: F_1 \rightarrow h_2'
+    data22 G22_1 G22_2 'G_{22}: F_2 \rightarrow h_2'
+    data31 G31_1 G31_2 'G_{31}: F_1 \rightarrow h_3'
+    data32 G32_1 G32_2 'G_{32}: F_2 \rightarrow h_3'
+    data41 G41_1 G41_2 'G_{41}: F_1 \rightarrow h_4'
+    data42 G42_1 G42_2 'G_{42}: F_2 \rightarrow h_4'
+};
 
-subplot(2,2,1)
-compare(data11,G11_1,G11_2)
-title('G_{11}: F_1 \rightarrow h_1')
+names = {
+    'G11'
+    'G12'
+    'G21'
+    'G22'
+    'G31'
+    'G32'
+    'G41'
+    'G42'
+};
 
-subplot(2,2,2)
-compare(data12,G12_1,G12_2)
-title('G_{12}: F_2 \rightarrow h_1')
+G_delay = cell(8,1);
 
-subplot(2,2,3)
-compare(data21,G21_1,G21_2)
-title('G_{21}: F_1 \rightarrow h_2')
+K_delay = zeros(8,1);
+tau_delay = zeros(8,1);
+theta_delay = zeros(8,1);
 
-subplot(2,2,4)
-compare(data22,G22_1,G22_2)
-title('G_{22}: F_2 \rightarrow h_2')
+RMSE_1 = zeros(8,1);
+RMSE_2 = zeros(8,1);
+RMSE_delay = zeros(8,1);
 
-sgtitle('First vs Second Order Models - h_1 and h_2 - 10% Step')
+opt = compareOptions('InitialCondition','z');
 
-drawnow
+for k = 1:8
 
-axs = findall(gcf,'Type','axes');
-
-for k = 1:length(axs)
-    axs(k).XLim = [0 1200];
-    axs(k).XTick = 0:120:1200;
-    axs(k).XTickLabel = string(0:2:20);
-end
-
-txt = findall(gcf,'Type','text');
-
-for k = 1:length(txt)
-    if contains(string(txt(k).String),'Time (seconds)')
-        txt(k).String = 'Time [min]';
+    if k == 1 || k == 5
+        figure
     end
-end
 
+    data = dataModels{k,1};
 
-% Compare h3 and h4
+    % First-order transfer function with delay
 
-figure
+    G_delay{k} = tfest(data,1,0,NaN);
 
-subplot(2,2,1)
-compare(data31,G31_1,G31_2)
-title('G_{31}: F_1 \rightarrow h_3')
+    K_delay(k) = dcgain(G_delay{k});
 
-subplot(2,2,2)
-compare(data32,G32_1,G32_2)
-title('G_{32}: F_2 \rightarrow h_3')
+    poles_delay = pole(G_delay{k});
+    tau_delay(k) = -1/real(poles_delay(1));
 
-subplot(2,2,3)
-compare(data41,G41_1,G41_2)
-title('G_{41}: F_1 \rightarrow h_4')
+    theta_delay(k) = G_delay{k}.IODelay;
 
-subplot(2,2,4)
-compare(data42,G42_1,G42_2)
-title('G_{42}: F_2 \rightarrow h_4')
+    % Model comparison
 
-sgtitle('First vs Second Order Models - h_3 and h_4 - 10% Step')
+    [ym1,~] = compare(data,dataModels{k,2},opt);
+    [ym2,~] = compare(data,dataModels{k,3},opt);
+    [ymD,~] = compare(data,G_delay{k},opt);
 
-drawnow
+    y = data.OutputData;
+    yhat1 = ym1.OutputData;
+    yhat2 = ym2.OutputData;
+    yhatD = ymD.OutputData;
 
-axs = findall(gcf,'Type','axes');
+    idx = t_id >= t_step;
 
-for k = 1:length(axs)
-    axs(k).XLim = [0 1200];
-    axs(k).XTick = 0:120:1200;
-    axs(k).XTickLabel = string(0:2:20);
-end
+    RMSE_1(k) = sqrt(mean((y(idx)-yhat1(idx)).^2));
+    RMSE_2(k) = sqrt(mean((y(idx)-yhat2(idx)).^2));
+    RMSE_delay(k) = sqrt(mean((y(idx)-yhatD(idx)).^2));
 
-txt = findall(gcf,'Type','text');
+    % Plots
 
-for k = 1:length(txt)
-    if contains(string(txt(k).String),'Time (seconds)')
-        txt(k).String = 'Time [min]';
+    subplot(2,2,mod(k-1,4)+1)
+
+    plot(t_id/60,y,'Color',[0.6 0.6 0.6])
+    hold on
+    plot(t_id/60,yhat1,'LineWidth',1.3)
+    plot(t_id/60,yhat2,'LineWidth',1.3)
+    plot(t_id/60,yhatD,'LineWidth',1.3)
+
+    grid on
+    xlim([0 20])
+    xticks(0:2:20)
+
+    title(dataModels{k,4})
+    xlabel('Time [min]')
+    ylabel('Normalized response')
+
+    legend( ...
+        'Simulation data', ...
+        sprintf('1st order: RMSE = %.4f',RMSE_1(k)), ...
+        sprintf('2nd order: RMSE = %.4f',RMSE_2(k)), ...
+        sprintf('1st + delay: RMSE = %.4f',RMSE_delay(k)), ...
+        'Location','best', ...
+        'FontSize',7)
+
+    if k == 4
+        sgtitle('Deterministic TF Comparison - h_1 and h_2')
+    elseif k == 8
+        sgtitle('Deterministic TF Comparison - h_3 and h_4')
     end
+
 end
 
 
-%% Model parameters
+% RMSE table
+
+RMSETable = table( ...
+    names,RMSE_1,RMSE_2,RMSE_delay, ...
+    'VariableNames', ...
+    {'TransferFunction','RMSE_1st','RMSE_2nd','RMSE_1st_Delay'});
+
+
+% Model parameters
 
 models1 = {
     G11_1
@@ -435,17 +547,6 @@ models2 = {
     G32_2
     G41_2
     G42_2
-};
-
-names = {
-    'G11'
-    'G12'
-    'G21'
-    'G22'
-    'G31'
-    'G32'
-    'G41'
-    'G42'
 };
 
 K1 = zeros(8,1);
@@ -485,12 +586,12 @@ SecondOrderTable = table( ...
     tau2_2, ...
     'VariableNames',{'TransferFunction','Gain','Tau1_s','Tau2_s'});
 
-
-fprintf('\nFIRST-ORDER MODEL PARAMETERS\n')
-disp(FirstOrderTable)
-
-fprintf('\nSECOND-ORDER MODEL PARAMETERS\n')
-disp(SecondOrderTable)
+DelayTable = table( ...
+    names, ...
+    K_delay, ...
+    tau_delay, ...
+    theta_delay, ...
+    'VariableNames',{'TransferFunction','Gain','Tau_s','Delay_s'});
 
 % Save tables
 
@@ -499,27 +600,73 @@ filename = 'TF_Parameters.xlsx';
 writetable(FirstOrderTable, filename, ...
     'Sheet', 'Deterministic 1st Order');
 
-% writetable(SecondOrderTable, filename, ...
-%     'Sheet', 'Deterministic 2nd Order');
+writetable(SecondOrderTable, filename, ...
+    'Sheet', 'Deterministic 2nd Order');
 
+writetable(DelayTable, filename, ...
+    'Sheet', 'Deterministic Delay');
 
-%% Markov parameters
+writetable(RMSETable, filename, ...
+    'Sheet', 'Deterministic RMSE');
+
 
 G = {
-    G11_1 G12_1
-    G21_1 G22_1
+    G11_1 G12_2
+    G21_2 G22_1
+    tf(0) G32_1
+    G41_1 tf(0)
 };
 
-num = cell(height(G),2);
-den = cell(height(G),2);
+t = 0:4:1200;
 
-for i = 1:height(G)
+figure
+
+for i = 1:4
     for j = 1:2
+
+        subplot(4,2,(i-1)*2+j)
+
+        y = step(tf(G{i,j}),t);
+
+        plot(t/60,y,'b','LineWidth',1.5)
+        grid on
+
+        xlim([0 20])
+        xticks(0:2:20)
+        ymax = max(0.1,ceil((y(end)+0.01)/0.05)*0.05);
+        ylim([0 ymax])
+
+        title(sprintf('G_{%d%d} - F_%d',i,j,j))
+        xlabel('Time [min]')
+        ylabel(sprintf('h_%d / \\Delta F_%d',i,j))
+
+    end
+end
+
+sgtitle('Selected Identified Transfer Functions - Deterministic Model')
+
+%% Markov parameters - deterministic model
+
+G = {
+    tf(G11_1) tf(G12_2)
+    tf(G21_2) tf(G22_1)
+    tf(0)     tf(G32_1)
+    tf(G41_1) tf(0)
+};
+
+ny = size(G,1);
+nu = size(G,2);
+
+num = cell(ny,nu);
+den = cell(ny,nu);
+
+for i = 1:ny
+    for j = 1:nu
         [num{i,j},den{i,j}] = tfdata(G{i,j},'v');
     end
 end
 
-tau = zeros(height(G),2);
+tau = zeros(ny,nu);
 
 Ts_markov = 4;
 N = 300;
@@ -528,56 +675,61 @@ N = 300;
     num,den,tau,Ts_markov,N);
 
 
+%% Plot Markov parameters
+
 figure
 
-for i = 1:height(G)
+for i = 1:ny
 
-    subplot(height(G),2,2*i-1)
-    stem(tH/60,squeeze(H(i,1,:)),'.')
-    grid on
-    xlim([0 20])
-    xticks(0:2:20)
-    ylabel(['h_' num2str(i)])
+    for j = 1:nu
 
-    if i == 1
-        title('F_1')
-    end
+        subplot(ny,nu,(i-1)*nu+j)
 
-    if i == height(G)
-        xlabel('Time [min]')
-    end
+        stem(tH/60,squeeze(H(i,j,:)),'.')
+        grid on
+        xlim([0 20])
+        xticks(0:2:20)
 
+        ylabel(['h_' num2str(i)])
 
-    subplot(height(G),2,2*i)
-    stem(tH/60,squeeze(H(i,2,:)),'.')
-    grid on
-    xlim([0 20])
-    xticks(0:2:20)
+        if i == 1
+            title(['F_' num2str(j)])
+        end
 
-    if i == 1
-        title('F_2')
-    end
+        if i == ny
+            xlabel('Time [min]')
+        end
 
-    if i == height(G)
-        xlabel('Time [min]')
     end
 
 end
 
-sgtitle('Discrete-Time Markov Parameters')
+sgtitle('Deterministic - Discrete-Time Markov Parameters')
 
-%% Discrete-time state-space realization
+
+%% Verify Markov parameters
+
+K_markov = sum(H,3);
+
+K_TF = cellfun(@dcgain,G);
+
+disp('DC gain calculated from Markov parameters:')
+disp(K_markov)
+
+disp('DC gain of identified transfer functions:')
+disp(K_TF)
+
+gainError = max(abs(K_markov(:)-K_TF(:)));
+
+fprintf('\nMaximum DC gain difference = %.3e\n',gainError)
+
+%% Hankel singular values - deterministic model
 
 Nmax = 300;
 tol = 1e-8;
 
-[Ad,Bd,Cd,Dd,sH] = mimoctf2dss( ...
+[~,~,~,~,sH] = mimoctf2dss( ...
     num,den,tau,Ts_markov,Nmax,tol);
-
-sysd = ss(Ad,Bd,Cd,Dd,Ts_markov);
-save('sysd.mat','sysd','Ad','Bd','Cd','Dd','Ts_markov');
-
-% Plot Singular Values
 
 figure
 
@@ -585,40 +737,87 @@ Nsv = min(20,length(sH));
 
 semilogy(1:Nsv,sH(1:Nsv),'o-')
 grid on
-xlim([1 Nsv])
+
+if Nsv > 1
+    xlim([1 Nsv])
+end
 
 xlabel('Singular value index')
 ylabel('Hankel singular value')
-title('Hankel Singular Values')
+title('Deterministic - Hankel Singular Values')
 
 yline(tol,'--','Tolerance')
 
-%% Verify Markov parameters from state-space model
 
-Hss = zeros(height(G),2,N+1);
+% Save Markov parameters
 
-Hss(:,:,1) = Dd;
+save('Markov_deterministic.mat', ...
+    'H','tH','sH','K_markov','K_TF', ...
+    'gainError','Ts_markov','N','Nmax','tol','G');
 
-for k = 1:N
-    Hss(:,:,k+1) = Cd*(Ad^(k-1))*Bd;
-end
 
-maxError = max(abs(H(:)-Hss(:)));
+%% Physical four-state space model - deterministic
 
-fprintf('\nMaximum Markov parameter realization error = %.3e\n\n', ...
-    maxError)
+a_tank = 1.2272*ones(4,1);
+A_tank = 380.1327*ones(4,1);
 
-K_markov = sum(H,3);
+gamma = [0.6; 0.7];
+g = 981;
+rho = 1;
 
-disp('DC gain calculated from Markov parameters:')
-disp(K_markov)
+hs = xs./(rho*A_tank);
 
-disp('DC gain of identified transfer functions:')
-disp([
-    dcgain(G11_1) dcgain(G12_1)
-    dcgain(G21_1) dcgain(G22_1)
-])
+T = (A_tank./a_tank).*sqrt(2*hs/g);
 
-save('Markov_Hankel.mat', ...
-    'H','tH','sH', ...
-    'Ts_markov','N','Nmax','tol')
+Ac = [
+    -1/T(1)   0         1/T(3)    0
+     0       -1/T(2)    0         1/T(4)
+     0        0        -1/T(3)    0
+     0        0         0        -1/T(4)
+];
+
+Bc = rho*[
+    gamma(1)    0
+    0           gamma(2)
+    0           1-gamma(2)
+    1-gamma(1)  0
+];
+
+Ec = rho*[
+    0 0
+    0 0
+    1 0
+    0 1
+];
+
+Cy = diag(1./(rho*A_tank));
+Cz = Cy(1:2,:);
+
+Dy = zeros(4,2);
+Dz = zeros(2,2);
+
+
+%% Discretization - ZOH
+
+sysc_all = ss(Ac,[Bc Ec],Cy,zeros(4,4));
+
+sysd_all = c2d(sysc_all,Ts_markov,'zoh');
+
+Ad = sysd_all.A;
+Bd = sysd_all.B(:,1:2);
+Ed = sysd_all.B(:,3:4);
+
+sysd_y = ss(Ad,Bd,Cy,Dy,Ts_markov);
+sysd = ss(Ad,Bd,Cz,Dz,Ts_markov);
+
+Cd = Cz;
+Dd = Dz;
+
+%% Save physical state-space model
+
+save('sysd.mat', ...
+    'sysd','sysd_y','sysd_all', ...
+    'Ac','Bc','Ec', ...
+    'Ad','Bd','Ed', ...
+    'Cy','Cz','Dy','Dz', ...
+    'Cd','Dd','Ts_markov');
